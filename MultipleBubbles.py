@@ -38,8 +38,48 @@ def dgp(n, k):
     y = np.apply_along_axis(np.cumsum, 0, z)
     return y
 
-def sadf_gsadf(y, adflag, mflag, info_criterion):
-    pass
+
+def sadf_gsadf(y, adflag: int, mflag: str = "c", autolag: str = "AIC"):
+    t = len(y)
+    r0 = 0.01 + 1.8 / np.sqrt(t)
+    swindow0 = int(np.floor(r0*t))
+    dim = int(t - swindow0 + 1)
+
+    badfs = np.zeros((dim, 1))
+
+    for i in range(swindow0, t + 1):  # t+1 instead of t
+        ith_row = i - swindow0  # Note difference from R script given 0-based indexing in Python
+        badfs[ith_row][0] = adfuller(y[0:i], maxlag=adflag, regression=mflag, autolag=autolag)[0]
+
+    sadf = np.max(badfs)
+
+    r2 = [i for i in range(swindow0, t + 1)]  # forward list, e.g. [13, 14, ..., 99]
+
+    bsadfs = np.zeros((1, dim))
+
+    for v in range(len(r2)):
+        swindow = [i for i in range(swindow0, r2[v] + 1)]  # reversed list [swindow0, ..., r2[v]]
+        r1 = [i for i in reversed(range(len(swindow)))]  # e.g. 13 - [13, 12, ..., 1] + 1
+        rwadft = np.zeros((len(swindow), 1))
+
+        for i in range(len(swindow)):
+            rwadft[i] = adfuller(y[r1[i]:r2[v]], maxlag=adflag, regression=mflag, autolag=autolag)[0]
+
+        bsadfs[0][v] = np.max(rwadft)
+
+    # if parallel...
+
+    gsadf = np.max(bsadfs[0])
+
+    result_dict = {'badfs': badfs,
+                   'bsadfs': bsadfs,
+                   'sadf': sadf,
+                   'gsadf': gsadf}
+
+    print(result_dict)
+
+    return result_dict
+
 
 def badfs():
     pass
@@ -86,9 +126,5 @@ def bsadfs(m, t, adflag=0, mflag="c"):
 
     for i in range(msadfs_num_cols):
         quantile_bsadfs[:, i] = np.quantile(msadfs[:, i], qe)
-
-
-    print(msadfs)
-    print(quantile_bsadfs)
 
     return msadfs, quantile_bsadfs
