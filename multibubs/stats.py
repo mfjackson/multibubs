@@ -3,7 +3,7 @@ from statsmodels.tsa.stattools import adfuller
 
 # TODO: Add type hinting
 
-def gsadf(m, t, adflag=0, mflag="c"):
+def gsadf(m:int, t:int, adflag:int=0, mflag:str="c"):
     qe = [0.9, 0.95, 0.99]
     r0 = 0.01 + 1.8 / np.sqrt(t)
     swindow0 = np.floor(r0 * t)
@@ -67,7 +67,7 @@ def sadf_gsadf(y, adflag: int, mflag: str = "c", autolag: str = "AIC"):
 
         bsadfs[0][v] = np.max(rwadft)
 
-    # if parallel...
+    # TODO: Add parallel computing capabilities
 
     gsadf = np.max(bsadfs[0])
 
